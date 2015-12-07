@@ -1,21 +1,49 @@
-var game = new Phaser.Game(800, 600, Phaser.AUTO, '', {preload: preload, 
+var game = new Phaser.Game(800, 800, Phaser.AUTO, '', {preload: preload, 
                                                        create: create, 
                                                        update: update});
 
-
+var map,
+    backgroundLayer,
+    impassableLayer;
 
 function preload() {
     game.load.spritesheet('player', 'assets/sprites/characters/player.png', 32, 32);
+    game.load.spritesheet('players', 'assets/sprites/characters/players.png', 32, 32);
 //    game.load.spritesheet('bigfoot', 'assets/sprites/characters/bigfoot1.png', 32, 64);
 //    game.load.spritesheet('nazi', 'assets/sprites/characters/nazi.png', 32, 32);
+    game.load.tilemap('map1', 'assets/maps/map1.json', null, Phaser.Tilemap.TILED_JSON);
+    game.load.tilemap('map2', 'assets/maps/map2.json', null, Phaser.Tilemap.TILED_JSON);
+    
+    game.load.image('high-fantasy-tiles', 'assets/sprites/scenery/HF1_A2.png');
+    game.load.image('misc-1-tiles', 'assets/sprites/scenery/setMisc1.png');
+    game.load.image('misc-2-tiles', 'assets/sprites/scenery/setMisc2.png');
+    game.load.image('icons-and-equipment', 'assets/sprites/scenery/setIcons.png');
 }
 
 
 
 function create() {
+    map = game.add.tilemap('map2');
+//    
+    map.addTilesetImage('high-fantasy-ground-tiles', 'high-fantasy-tiles')
+    map.addTilesetImage('environment-1', 'misc-1-tiles')
+    map.addTilesetImage('high-fantasy-misc', 'misc-2-tiles')
+    map.addTilesetImage('icons-and-equipment', 'icons-and-equipment')
+//    
+    backgroundlayer = map.createLayer('grass-base');
+    impassableLayer = map.createLayer('impassable-environment');
+    passableLayer = map.createLayer('passable-environment');
+    map.setCollisionBetween(1, 2000, true, 'impassable-environment');
+//    
+//    
     game.physics.startSystem(Phaser.Physics.ARCADE);
-    
+//    
     player = game.add.sprite(game.world.centerX, game.world.centerY, 'player', 1);
+    player.enableBody = true;
+//    
+//    baddies = game.add.group();
+//    baddies.enableBody = true;
+    
     
     game.physics.arcade.enable(player);
     
@@ -40,12 +68,16 @@ function create() {
     player.animations.add('dead', [6, 19, 32, 45], 8, true);
     
     cursors = game.input.keyboard.createCursorKeys();
+    
+    
 }
 
 
 
 function update() {
-    player.body.velocity.x = 0;
+    game.physics.arcade.collide(player, impassableLayer);
+    
+        player.body.velocity.x = 0;
     player.body.velocity.y = 0;
     
     if (cursors.up.isDown) {
