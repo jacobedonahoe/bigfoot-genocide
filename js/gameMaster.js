@@ -4,9 +4,7 @@ var game = new Phaser.Game(800, 800, Phaser.AUTO, '', {preload: preload,
 
 var map,
     backgroundLayer,
-    impassableLayer;
-var bigfootXPos = 500,
-    bigfootYPos = 90,
+    impassableLayer,
     bigfootTween1,
     bigfootTween2,
     bigfootTween3,
@@ -14,11 +12,16 @@ var bigfootXPos = 500,
     bigfootDirection,
     playerDirection,
     punchTime = 0,
-    
+    epicBattleTime = 0,
     playerPunchUpAnim,
     playerPunchDownAnim,
     playerPunchLeftAnim,
-    playerPunchRightAnim;
+    playerPunchRightAnim,
+    playerLives = 3,
+    bigfootLives = 3,
+    livesText;
+
+
 
 function preload() {
     game.load.spritesheet('player', 'assets/sprites/characters/player.png', 28, 28);
@@ -37,22 +40,24 @@ function preload() {
 
 function create() {
     map = game.add.tilemap('map2');
-//    
+    
     map.addTilesetImage('high-fantasy-ground-tiles', 'high-fantasy-tiles')
     map.addTilesetImage('environment-1', 'misc-1-tiles')
     map.addTilesetImage('high-fantasy-misc', 'misc-2-tiles')
     map.addTilesetImage('icons-and-equipment', 'icons-and-equipment')
-//    
+    
     backgroundlayer = map.createLayer('grass-base');
     impassableLayer = map.createLayer('impassable-environment');
     passableLayer = map.createLayer('passable-environment');
     map.setCollisionBetween(1, 2000, true, 'impassable-environment');
-//    
-//    
+    
+    
     game.physics.startSystem(Phaser.Physics.ARCADE);
     
     cursors = game.input.keyboard.createCursorKeys();
     spacebar = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
+    
+    livesText = game.add.text(650, 30, 'Lives: 3', {fontSize: '32px', fill: '#fff'});
     
     setupPlayer();
     setupBigfoot();
@@ -97,7 +102,7 @@ function setupPlayer() {
 
 
 function setupBigfoot() {
-    bigfoot = game.add.sprite(bigfootXPos, bigfootYPos, 'bigfoot');
+    bigfoot = game.add.sprite(700, 130, 'bigfoot');
     
     game.physics.arcade.enable(bigfoot);
     
@@ -122,7 +127,7 @@ function setupBigfoot() {
 
 
 function update() {
-    console.log(player.animations.currentAnim.name);
+    console.log(bigfootDirection);
     game.physics.arcade.overlap(player, bigfoot, epicBattle, null, this);
     game.physics.arcade.collide(player, impassableLayer);
     
@@ -142,7 +147,54 @@ function update() {
 
 
 function epicBattle(player, bigfoot) {
-    // TODO: Handle collision
+    if (game.time.now > epicBattleTime) {
+        if (playerIsPunching()) {
+            
+            
+            // Shoot bigfoot back using shootSpriteBack()
+            switch (bigfootDirection) {
+            case "bottomLeft":
+                
+                break;
+            case "bottomRight":
+                
+                break;
+            case "topLeft":
+                
+                break;
+            case "topRight":
+                
+                break;
+            default:
+                bigfoot.animations.play("standBottomLeft");
+                break;
+        }
+
+            // take damage
+
+
+        } else {
+            // shoot player back using shootSpriteBack()
+
+
+            // play hurt animation
+
+
+            // take damage
+
+
+        }
+        
+        epicBattleTime = game.time.now + 1000;
+    }
+}
+
+
+
+function shootSpriteBack(sprite, toX, toY) {
+    var tween = game.add.tween(sprite).to({x: toX, y: toY},
+                                          800,
+                                          Phaser.Easing.Exponential.Out);
 }
 
 
