@@ -45,6 +45,8 @@ function setupPlayer() {
     playerDirection = "down";
     
     game.physics.arcade.enable(player);
+    player.anchor.x = 0.5;
+    player.anchor.y = 0.5;
     
     // ~~~~~~~MIGHT NEED TO REMOVE THIS! MAY IMPACT ABILITY TO INTERACT WITH EDGES OF MAP~~~~~~~~~~ //
     player.body.collideWorldBounds = true;
@@ -79,6 +81,9 @@ function setupBigfoot() {
     
     game.physics.arcade.enable(bigfoot);
     
+    bigfoot.anchor.x = 0.5;
+    bigfoot.anchor.y = 0.5;
+    
     bigfoot.body.collideWorldBounds = true;
     
     bigfoot.animations.add('standBottomLeft', [0, 1, 2, 3, 4, 5, 6, 7], 6, true);
@@ -92,74 +97,7 @@ function setupBigfoot() {
     bigfoot.animations.add('walkTopRight', [56, 57, 58, 59, 60, 61], 6, true);
     
     bigfoot.animations.play('standBottomLeft');
-    
-//    addBigfootDocileBehavior();
 }
-
-
-
-//function addBigfootDocileBehavior() {    
-//    bigfootTween1 = game.add.tween(bigfoot).to({x: bigfootXPos - 100, y: bigfootYPos + 100},
-//                                            1200,
-//                                            Phaser.Easing.Linear.None,
-//                                            false,
-//                                            3000);
-//    var bigfootTween2 = game.add.tween(bigfoot).to({x: bigfootXPos + 100, y: bigfootYPos + 100},
-//                                            1200,
-//                                            Phaser.Easing.Linear.None,
-//                                            false,
-//                                            3000);
-//    var bigfootTween3 = game.add.tween(bigfoot).to({x: bigfootXPos + 100, y: bigfootYPos - 100},
-//                                            1200,
-//                                            Phaser.Easing.Linear.None,
-//                                            false,
-//                                            3000);
-//    var bigfootTween4 = game.add.tween(bigfoot).to({x: bigfootXPos - 100, y: bigfootYPos - 100},
-//                                            1200,
-//                                            Phaser.Easing.Linear.None,
-//                                            false,
-//                                            3000);
-//    
-//    bigfootTween1.onStart.add(function() {
-//        bigfoot.animations.play('walkBottomLeft');
-//    }, this);
-//    bigfootTween2.onStart.add(function() {
-//        bigfoot.animations.play('walkBottomRight');
-//    }, this);
-//    bigfootTween3.onStart.add(function() {
-//        bigfoot.animations.play('walkTopRight');
-//    }, this);
-//    bigfootTween4.onStart.add(function() {
-//        bigfoot.animations.play('walkTopLeft');
-//    }, this);
-//    
-//    bigfootTween1.onComplete.add(function() {
-//        bigfoot.animations.play('standBottomRight');
-//        bigfootXPos = bigfoot.body.x;
-//        bigfootYPos = bigfoot.body.y;
-//        bigfootTween2.start();
-//    }, this);
-//    bigfootTween2.onComplete.add(function() {
-//        bigfoot.animations.play('standTopRight');
-//        bigfootXPos = bigfoot.body.x;
-//        bigfootYPos = bigfoot.body.y;
-//        bigfootTween3.start();
-//    }, this);
-//    bigfootTween3.onComplete.add(function() {
-//        bigfoot.animations.play('standTopLeft');
-//        bigfootXPos = bigfoot.body.x;
-//        bigfootYPos = bigfoot.body.y;
-//        bigfootTween4.start();
-//    }, this);    
-//    bigfootTween4.onComplete.add(function() {
-//        bigfoot.animations.play('standBottomLeft');
-//        bigfootXPos = bigfoot.body.x;
-//        bigfootYPos = bigfoot.body.y;
-//        bigfootTween1.start();
-//    }, this);
-//    
-//    bigfootTween1.start();
-//}
 
 
 
