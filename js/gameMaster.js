@@ -1,7 +1,10 @@
-var game = new Phaser.Game(800, 600, Phaser.AUTO, '', {preload: preload, 
+var game = new Phaser.Game(800, 800, Phaser.AUTO, '', {preload: preload, 
                                                        create: create, 
                                                        update: update});
 
+var map,
+    backgroundLayer,
+    impassableLayer;
 var bigfootXPos = 500,
     bigfootYPos = 90,
     bigfootTween1,
@@ -17,25 +20,42 @@ var bigfootXPos = 500,
     playerPunchLeftAnim,
     playerPunchRightAnim;
 
-
-
 function preload() {
     game.load.spritesheet('player', 'assets/sprites/characters/player.png', 32, 32);
+    game.load.spritesheet('players', 'assets/sprites/characters/players.png', 32, 32);
     game.load.spritesheet('bigfoot', 'assets/sprites/characters/bigfoot1.png', 85, 120);
+    game.load.tilemap('map1', 'assets/maps/map1.json', null, Phaser.Tilemap.TILED_JSON);
+    game.load.tilemap('map2', 'assets/maps/map2.json', null, Phaser.Tilemap.TILED_JSON);
+    
+    game.load.image('high-fantasy-tiles', 'assets/sprites/scenery/HF1_A2.png');
+    game.load.image('misc-1-tiles', 'assets/sprites/scenery/setMisc1.png');
+    game.load.image('misc-2-tiles', 'assets/sprites/scenery/setMisc2.png');
+    game.load.image('icons-and-equipment', 'assets/sprites/scenery/setIcons.png');
 }
 
 
 
 function create() {
+    map = game.add.tilemap('map2');
+//    
+    map.addTilesetImage('high-fantasy-ground-tiles', 'high-fantasy-tiles')
+    map.addTilesetImage('environment-1', 'misc-1-tiles')
+    map.addTilesetImage('high-fantasy-misc', 'misc-2-tiles')
+    map.addTilesetImage('icons-and-equipment', 'icons-and-equipment')
+//    
+    backgroundlayer = map.createLayer('grass-base');
+    impassableLayer = map.createLayer('impassable-environment');
+    passableLayer = map.createLayer('passable-environment');
+    map.setCollisionBetween(1, 2000, true, 'impassable-environment');
+//    
+//    
     game.physics.startSystem(Phaser.Physics.ARCADE);
+    
+    cursors = game.input.keyboard.createCursorKeys();
+    spacebar = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
     
     setupPlayer();
     setupBigfoot();
-    
-    cursors = game.input.keyboard.createCursorKeys();
-    
-    // MAY NEED TO DO SOMETHING WITH addKeyCapture() if there's issues
-    spacebar = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
 }
 
 
@@ -104,6 +124,7 @@ function setupBigfoot() {
 function update() {
     console.log(player.animations.currentAnim.name);
     game.physics.arcade.overlap(player, bigfoot, epicBattle, null, this);
+    game.physics.arcade.collide(player, impassableLayer);
     
     checkMovePlayer();
     checkPlayerPunch();
