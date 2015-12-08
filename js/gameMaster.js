@@ -21,7 +21,7 @@ var bigfootXPos = 500,
     playerPunchRightAnim;
 
 function preload() {
-    game.load.spritesheet('player', 'assets/sprites/characters/player.png', 32, 32);
+    game.load.spritesheet('player', 'assets/sprites/characters/player.png', 28, 28);
     game.load.spritesheet('players', 'assets/sprites/characters/players.png', 32, 32);
     game.load.spritesheet('bigfoot', 'assets/sprites/characters/bigfoot1.png', 85, 120);
     game.load.tilemap('map1', 'assets/maps/map1.json', null, Phaser.Tilemap.TILED_JSON);
