@@ -8,7 +8,14 @@ var bigfootXPos = 500,
     bigfootTween2,
     bigfootTween3,
     bigfootTween4,
-    bigfootDirection;
+    bigfootDirection,
+    playerDirection,
+    punchTime = 0,
+    
+    playerPunchUpAnim,
+    playerPunchDownAnim,
+    playerPunchLeftAnim,
+    playerPunchRightAnim;
 
 
 
@@ -26,12 +33,16 @@ function create() {
     setupBigfoot();
     
     cursors = game.input.keyboard.createCursorKeys();
+    
+    // MAY NEED TO DO SOMETHING WITH addKeyCapture() if there's issues
+    spacebar = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
 }
 
 
 
 function setupPlayer() {
     player = game.add.sprite(game.world.centerX, game.world.centerY, 'player', 1);
+    playerDirection = "down";
     
     game.physics.arcade.enable(player);
     
@@ -48,10 +59,15 @@ function setupPlayer() {
     player.animations.add('damagedLeft', [], 8, true);
     player.animations.add('damagedRight', [], 8, true);
     
-    player.animations.add('punchUp', [46, 47, 48, 49, 50, 51], 8, true);
-    player.animations.add('punchDown', [7, 8, 9, 10, 11, 12], 8, true);
-    player.animations.add('punchLeft', [20, 21, 22, 23, 24, 25], 8, true);
-    player.animations.add('punchRight', [33, 34, 35, 36, 37, 38], 8, true);
+    player.animations.add('punchUp', [46, 47, 48, 49, 50, 51], 8);
+    player.animations.add('punchDown', [7, 8, 9, 10, 11, 12], 8);
+    player.animations.add('punchLeft', [20, 21, 22, 23, 24, 25], 8);
+    player.animations.add('punchRight', [33, 34, 35, 36, 37, 38], 8);
+    
+    playerPunchUpAnim = player.animations.getAnimation("punchUp");
+    playerPunchDownAnim = player.animations.getAnimation("punchDown");
+    playerPunchLeftAnim = player.animations.getAnimation("punchLeft");
+    playerPunchRightAnim = player.animations.getAnimation("punchRight");
     
     player.animations.add('dead', [6, 19, 32, 45], 8, true);
 }
@@ -65,15 +81,15 @@ function setupBigfoot() {
     
     bigfoot.body.collideWorldBounds = true;
     
-    bigfoot.animations.add('standBottomLeft', [0, 1, 2, 3, 4, 5, 6, 7], 8, true);
-    bigfoot.animations.add('standBottomRight', [8, 9, 10, 11, 12, 13, 14, 15], 8, true);
-    bigfoot.animations.add('standTopLeft', [16, 17, 18, 19, 20, 21], 8, true);
-    bigfoot.animations.add('standTopRight', [24, 25, 26, 27, 28, 29], 8, true);
+    bigfoot.animations.add('standBottomLeft', [0, 1, 2, 3, 4, 5, 6, 7], 6, true);
+    bigfoot.animations.add('standBottomRight', [8, 9, 10, 11, 12, 13, 14, 15], 6, true);
+    bigfoot.animations.add('standTopLeft', [16, 17, 18, 19, 20, 21], 6, true);
+    bigfoot.animations.add('standTopRight', [24, 25, 26, 27, 28, 29], 6, true);
     
-    bigfoot.animations.add('walkBottomLeft', [32, 33, 34, 35, 36, 37], 8, true);
-    bigfoot.animations.add('walkBottomRight', [40, 41, 42, 43, 44, 45], 8, true);
-    bigfoot.animations.add('walkTopLeft', [48, 49, 50, 51, 52, 53], 8, true);
-    bigfoot.animations.add('walkTopRight', [56, 57, 58, 59, 60, 61], 8, true);
+    bigfoot.animations.add('walkBottomLeft', [32, 33, 34, 35, 36, 37], 6, true);
+    bigfoot.animations.add('walkBottomRight', [40, 41, 42, 43, 44, 45], 6, true);
+    bigfoot.animations.add('walkTopLeft', [48, 49, 50, 51, 52, 53], 6, true);
+    bigfoot.animations.add('walkTopRight', [56, 57, 58, 59, 60, 61], 6, true);
     
     bigfoot.animations.play('standBottomLeft');
     
@@ -82,73 +98,77 @@ function setupBigfoot() {
 
 
 
-function addBigfootDocileBehavior() {    
-    bigfootTween1 = game.add.tween(bigfoot).to({x: bigfootXPos - 100, y: bigfootYPos + 100},
-                                            1200,
-                                            Phaser.Easing.Linear.None,
-                                            false,
-                                            3000);
-    var bigfootTween2 = game.add.tween(bigfoot).to({x: bigfootXPos + 100, y: bigfootYPos + 100},
-                                            1200,
-                                            Phaser.Easing.Linear.None,
-                                            false,
-                                            3000);
-    var bigfootTween3 = game.add.tween(bigfoot).to({x: bigfootXPos + 100, y: bigfootYPos - 100},
-                                            1200,
-                                            Phaser.Easing.Linear.None,
-                                            false,
-                                            3000);
-    var bigfootTween4 = game.add.tween(bigfoot).to({x: bigfootXPos - 100, y: bigfootYPos - 100},
-                                            1200,
-                                            Phaser.Easing.Linear.None,
-                                            false,
-                                            3000);
-    
-    bigfootTween1.onStart.add(function() {
-        bigfoot.animations.play('walkBottomLeft');
-    }, this);
-    bigfootTween2.onStart.add(function() {
-        bigfoot.animations.play('walkBottomRight');
-    }, this);
-    bigfootTween3.onStart.add(function() {
-        bigfoot.animations.play('walkTopRight');
-    }, this);
-    bigfootTween4.onStart.add(function() {
-        bigfoot.animations.play('walkTopLeft');
-    }, this);
-    
-    bigfootTween1.onComplete.add(function() {
-        bigfoot.animations.play('standBottomRight');
-        bigfootXPos = bigfoot.body.x;
-        bigfootYPos = bigfoot.body.y;
-        bigfootTween2.start();
-    }, this);
-    bigfootTween2.onComplete.add(function() {
-        bigfoot.animations.play('standTopRight');
-        bigfootXPos = bigfoot.body.x;
-        bigfootYPos = bigfoot.body.y;
-        bigfootTween3.start();
-    }, this);
-    bigfootTween3.onComplete.add(function() {
-        bigfoot.animations.play('standTopLeft');
-        bigfootXPos = bigfoot.body.x;
-        bigfootYPos = bigfoot.body.y;
-        bigfootTween4.start();
-    }, this);    
-    bigfootTween4.onComplete.add(function() {
-        bigfoot.animations.play('standBottomLeft');
-        bigfootXPos = bigfoot.body.x;
-        bigfootYPos = bigfoot.body.y;
-        bigfootTween1.start();
-    }, this);
-    
-    bigfootTween1.start();
-}
+//function addBigfootDocileBehavior() {    
+//    bigfootTween1 = game.add.tween(bigfoot).to({x: bigfootXPos - 100, y: bigfootYPos + 100},
+//                                            1200,
+//                                            Phaser.Easing.Linear.None,
+//                                            false,
+//                                            3000);
+//    var bigfootTween2 = game.add.tween(bigfoot).to({x: bigfootXPos + 100, y: bigfootYPos + 100},
+//                                            1200,
+//                                            Phaser.Easing.Linear.None,
+//                                            false,
+//                                            3000);
+//    var bigfootTween3 = game.add.tween(bigfoot).to({x: bigfootXPos + 100, y: bigfootYPos - 100},
+//                                            1200,
+//                                            Phaser.Easing.Linear.None,
+//                                            false,
+//                                            3000);
+//    var bigfootTween4 = game.add.tween(bigfoot).to({x: bigfootXPos - 100, y: bigfootYPos - 100},
+//                                            1200,
+//                                            Phaser.Easing.Linear.None,
+//                                            false,
+//                                            3000);
+//    
+//    bigfootTween1.onStart.add(function() {
+//        bigfoot.animations.play('walkBottomLeft');
+//    }, this);
+//    bigfootTween2.onStart.add(function() {
+//        bigfoot.animations.play('walkBottomRight');
+//    }, this);
+//    bigfootTween3.onStart.add(function() {
+//        bigfoot.animations.play('walkTopRight');
+//    }, this);
+//    bigfootTween4.onStart.add(function() {
+//        bigfoot.animations.play('walkTopLeft');
+//    }, this);
+//    
+//    bigfootTween1.onComplete.add(function() {
+//        bigfoot.animations.play('standBottomRight');
+//        bigfootXPos = bigfoot.body.x;
+//        bigfootYPos = bigfoot.body.y;
+//        bigfootTween2.start();
+//    }, this);
+//    bigfootTween2.onComplete.add(function() {
+//        bigfoot.animations.play('standTopRight');
+//        bigfootXPos = bigfoot.body.x;
+//        bigfootYPos = bigfoot.body.y;
+//        bigfootTween3.start();
+//    }, this);
+//    bigfootTween3.onComplete.add(function() {
+//        bigfoot.animations.play('standTopLeft');
+//        bigfootXPos = bigfoot.body.x;
+//        bigfootYPos = bigfoot.body.y;
+//        bigfootTween4.start();
+//    }, this);    
+//    bigfootTween4.onComplete.add(function() {
+//        bigfoot.animations.play('standBottomLeft');
+//        bigfootXPos = bigfoot.body.x;
+//        bigfootYPos = bigfoot.body.y;
+//        bigfootTween1.start();
+//    }, this);
+//    
+//    bigfootTween1.start();
+//}
 
 
 
 function update() {
+    console.log(player.animations.currentAnim.name);
+    game.physics.arcade.overlap(player, bigfoot, epicBattle, null, this);
+    
     checkMovePlayer();
+    checkPlayerPunch();
     
     if (game.physics.arcade.distanceBetween(bigfoot, player) < 200) {
         game.tweens.removeFrom(bigfoot);
@@ -162,24 +182,79 @@ function update() {
 
 
 
+function epicBattle(player, bigfoot) {
+    // TODO: Handle collision
+}
+
+
+
 function checkMovePlayer() {
     player.body.velocity.x = 0;
     player.body.velocity.y = 0;
     
     if (cursors.up.isDown) {
         player.body.velocity.y = -100;
-        player.animations.play('walkUp');
+        if (!playerIsPunching()) {
+            player.animations.play('walkUp');
+        }
+        playerDirection = "up";
     } else if (cursors.down.isDown) {
         player.body.velocity.y = 100;
-        player.animations.play('walkDown');
+        if (!playerIsPunching()) {
+            player.animations.play('walkDown');
+        }
+        playerDirection = "down";
     } else if (cursors.left.isDown) {
         player.body.velocity.x = -100;
-        player.animations.play('walkLeft');
+        if (!playerIsPunching()) {
+            player.animations.play('walkLeft');
+        }
+        playerDirection = "left";
     } else if (cursors.right.isDown) {
         player.body.velocity.x = 100;
-        player.animations.play('walkRight');
+        if (!playerIsPunching()) {
+            player.animations.play('walkRight');
+        }
+        playerDirection = "right";
     } else {
-        player.animations.stop();
+        if (!playerIsPunching()) {
+            player.animations.stop();
+        }
+    }
+}
+
+
+
+function playerIsPunching() {
+    return playerPunchUpAnim.isPlaying ||
+        playerPunchDownAnim.isPlaying ||
+        playerPunchLeftAnim.isPlaying ||
+        playerPunchRightAnim.isPlaying;
+}
+
+
+
+function checkPlayerPunch() {
+    if (spacebar.isDown) {
+        if (game.time.now > punchTime) {
+            switch (playerDirection) {
+                case "up":
+                    playerPunchUpAnim.play();
+                    break;
+                case "down":
+                    playerPunchDownAnim.play();
+                    break;
+                case "left":
+                    playerPunchLeftAnim.play();
+                    break;
+                case "right":
+                    playerPunchRightAnim.play();
+                    break;
+                default:
+                    break;
+            }
+            punchTime = game.time.now + 1500;
+        }
     }
 }
 
