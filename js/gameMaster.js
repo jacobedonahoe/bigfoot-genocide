@@ -13,13 +13,23 @@ var map,
     playerDirection,
     punchTime = 0,
     epicBattleTime = 0,
+    
     playerPunchUpAnim,
     playerPunchDownAnim,
     playerPunchLeftAnim,
     playerPunchRightAnim,
+    playerDamagedUpAnim,
+    playerDamagedDownAnim,
+    playerDamagedLeftAnim,
+    playerDamagedRightAnim,
+    
     playerLives = 3,
-    bigfootLives = 3,
-    livesText;
+    bigfootLives = 5,
+    livesText,
+    
+    gameInterruptionText,
+    gameOver = false,
+    spongebob;
 
 
 
@@ -34,6 +44,11 @@ function preload() {
     game.load.image('misc-1-tiles', 'assets/sprites/scenery/setMisc1.png');
     game.load.image('misc-2-tiles', 'assets/sprites/scenery/setMisc2.png');
     game.load.image('icons-and-equipment', 'assets/sprites/scenery/setIcons.png');
+    
+    game.load.spritesheet('spongebob', 'assets/sprites/victory-screech.png', 500, 360);
+    
+    game.load.audio('victory-screech', 'assets/audio/victory-screech.m4a');
+    game.load.audio('troll', 'assets/audio/troll.m4a');
 }
 
 
@@ -58,6 +73,20 @@ function create() {
     spacebar = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
     
     livesText = game.add.text(650, 30, 'Lives: 3', {fontSize: '32px', fill: '#fff'});
+    gameInterruptionText = game.add.text(game.world.centerX, 
+                                         game.world.centerY, 
+                                         '- Game Over -', 
+                                         {font: "80px Arial", fill: "#fff", align: "center"});
+    gameInterruptionText.visible = false;
+    gameInterruptionText.anchor.x = 0.5;
+    gameInterruptionText.anchor.y = 0.5;
+    
+    spongebob = game.add.image(game.world.centerX, game.world.centerY, 'spongebob');
+    spongebob.anchor.x = 0.5;
+    spongebob.anchor.y = 0.5;
+    spongebob.animations.add('victoryScreech', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], 30, true);
+    spongebob.animations.play('victoryScreech');
+    spongebob.kill();
     
     setupPlayer();
     setupBigfoot();
@@ -81,10 +110,10 @@ function setupPlayer() {
     player.animations.add('walkLeft', [13, 14, 15], 8, true);
     player.animations.add('walkRight', [26, 27, 28], 8, true);
     
-    player.animations.add('damagedUp', [], 8, true);
-    player.animations.add('damagedDown', [], 8, true);
-    player.animations.add('damagedLeft', [], 8, true);
-    player.animations.add('damagedRight', [], 8, true);
+    player.animations.add('damagedUp', [42, 43, 44], 6);
+    player.animations.add('damagedDown', [3, 4, 5], 6);
+    player.animations.add('damagedLeft', [16, 17, 18], 6);
+    player.animations.add('damagedRight', [29, 30, 31], 6);
     
     player.animations.add('punchUp', [46, 47, 48, 49, 50, 51], 8);
     player.animations.add('punchDown', [7, 8, 9, 10, 11, 12], 8);
@@ -96,13 +125,19 @@ function setupPlayer() {
     playerPunchLeftAnim = player.animations.getAnimation("punchLeft");
     playerPunchRightAnim = player.animations.getAnimation("punchRight");
     
-    player.animations.add('dead', [6, 19, 32, 45], 8, true);
+    playerDamagedUpAnim = player.animations.getAnimation("damagedUp");
+    playerDamagedDownAnim = player.animations.getAnimation("damagedDown");
+    playerDamagedLeftAnim = player.animations.getAnimation("damagedLeft");
+    playerDamagedRightAnim = player.animations.getAnimation("damagedRight");
+    
+    player.animations.add('dead', [6, 19, 32, 45], 2);
 }
 
 
 
 function setupBigfoot() {
     bigfoot = game.add.sprite(700, 130, 'bigfoot');
+    bigfootDirection = "bottomLeft";
     
     game.physics.arcade.enable(bigfoot);
     
@@ -122,25 +157,37 @@ function setupBigfoot() {
     bigfoot.animations.add('walkTopRight', [56, 57, 58, 59, 60, 61], 6, true);
     
     bigfoot.animations.play('standBottomLeft');
+    
+    bigfoot.alpha = 0.4;
 }
 
 
 
 function update() {
-    console.log(bigfootDirection);
-    game.physics.arcade.overlap(player, bigfoot, epicBattle, null, this);
-    game.physics.arcade.collide(player, impassableLayer);
+    if (playerLives <= 0 && !gameOver) {
+        gameOver = true;
+        endGame(false);
+    } else if (bigfootLives <= 0 && !gameOver) {
+        gameOver = true;
+        endGame(true);
+    }
     
-    checkMovePlayer();
-    checkPlayerPunch();
-    
-    if (game.physics.arcade.distanceBetween(bigfoot, player) < 200) {
-        game.tweens.removeFrom(bigfoot);
-        game.physics.arcade.moveToObject(bigfoot, player);
-        
-        setBigfootsDirection();        
-    } else {
-        stopBigfoot();
+    if (!gameOver) {
+        game.physics.arcade.overlap(player, bigfoot, epicBattle, null, this);
+        game.physics.arcade.collide(player, impassableLayer);
+
+        checkMovePlayer();
+        checkPlayerPunch();
+
+        if (game.physics.arcade.distanceBetween(bigfoot, player) < 200) {
+            if (bigfoot.alpha != 1) {
+                bigfoot.alpha = 1;
+            }
+            game.physics.arcade.moveToObject(bigfoot, player);
+            setBigfootsDirection();        
+        } else {
+            stopBigfoot();
+        }
     }
 }
 
@@ -149,40 +196,50 @@ function update() {
 function epicBattle(player, bigfoot) {
     if (game.time.now > epicBattleTime) {
         if (playerIsPunching()) {
-            
-            
-            // Shoot bigfoot back using shootSpriteBack()
             switch (bigfootDirection) {
-            case "bottomLeft":
-                
-                break;
-            case "bottomRight":
-                
-                break;
-            case "topLeft":
-                
-                break;
-            case "topRight":
-                
-                break;
-            default:
-                bigfoot.animations.play("standBottomLeft");
-                break;
-        }
-
-            // take damage
-
-
+                case "bottomLeft":
+                    shootSpriteBack(bigfoot, (bigfoot.body.x + 20), (bigfoot.body.y - 20));
+                    break;
+                case "bottomRight":
+                    shootSpriteBack(bigfoot, (bigfoot.body.x - 20), (bigfoot.body.y - 20));
+                    break;
+                case "topLeft":
+                    shootSpriteBack(bigfoot, (bigfoot.body.x + 20), (bigfoot.body.y + 20));
+                    break;
+                case "topRight":
+                    shootSpriteBack(bigfoot, (bigfoot.body.x - 20), (bigfoot.body.y + 20));
+                    break;
+                default:
+                    bigfoot.animations.play("standBottomLeft");
+                    break;
+            }
+            bigfootLives--;
         } else {
-            // shoot player back using shootSpriteBack()
-
-
-            // play hurt animation
-
-
-            // take damage
-
-
+            player.animations.stop();
+            
+            switch (playerDirection) {
+                case "up":
+                    shootSpriteBack(player, player.body.x, (player.body.y + 150));
+                    player.animations.play('damagedUp');
+                    break;
+                case "down":
+                    shootSpriteBack(player, player.body.x, (player.body.y - 150));
+                    player.animations.play('damagedDown');
+                    break;
+                case "left":
+                    shootSpriteBack(player, (player.body.x + 150), player.body.y);
+                    player.animations.play('damagedLeft');
+                    break;
+                case "right":
+                    shootSpriteBack(player, (player.body.x - 150), player.body.y);
+                    player.animations.play('damagedRight');
+                    break;
+                default:
+                    break;
+            }
+            
+            playerLives--;
+            livesText.text = "Lives: " + playerLives;
         }
         
         epicBattleTime = game.time.now + 1000;
@@ -193,8 +250,37 @@ function epicBattle(player, bigfoot) {
 
 function shootSpriteBack(sprite, toX, toY) {
     var tween = game.add.tween(sprite).to({x: toX, y: toY},
-                                          800,
-                                          Phaser.Easing.Exponential.Out);
+                                          350,
+                                          Phaser.Easing.Exponential.Out,
+                                          true);
+}
+
+
+
+function endGame(didWin) {
+    game.input.enabled = false;
+    
+    player.body.velocity.setTo(0, 0);
+    bigfoot.body.velocity.setTo(0, 0);
+    
+    if (didWin) {
+        bigfoot.kill();
+        player.animations.play('punchDown', 8, true);
+        
+        gameInterruptionText.text = "YOU WIN!\n VICTORY SCREECH";
+        gameInterruptionText.visible = true;
+        gameInterruptionText.bringToTop();
+        spongebob.revive();
+        
+        game.sound.play('victory-screech');
+    } else {
+        bigfoot.animations.play('standBottomLeft');
+        player.animations.play('dead', 3, false, true);
+
+        gameInterruptionText.visible = true;
+        
+        game.sound.play('troll');
+    }
 }
 
 
@@ -203,33 +289,35 @@ function checkMovePlayer() {
     player.body.velocity.x = 0;
     player.body.velocity.y = 0;
     
-    if (cursors.up.isDown) {
-        player.body.velocity.y = -100;
-        if (!playerIsPunching()) {
-            player.animations.play('walkUp');
-        }
-        playerDirection = "up";
-    } else if (cursors.down.isDown) {
-        player.body.velocity.y = 100;
-        if (!playerIsPunching()) {
-            player.animations.play('walkDown');
-        }
-        playerDirection = "down";
-    } else if (cursors.left.isDown) {
-        player.body.velocity.x = -100;
-        if (!playerIsPunching()) {
-            player.animations.play('walkLeft');
-        }
-        playerDirection = "left";
-    } else if (cursors.right.isDown) {
-        player.body.velocity.x = 100;
-        if (!playerIsPunching()) {
-            player.animations.play('walkRight');
-        }
-        playerDirection = "right";
-    } else {
-        if (!playerIsPunching()) {
-            player.animations.stop();
+    if (!playerIsDamaged()) {
+        if (cursors.up.isDown) {
+            player.body.velocity.y = -100;
+            if (!playerIsPunching()) {
+                player.animations.play('walkUp');
+            }
+            playerDirection = "up";
+        } else if (cursors.down.isDown) {
+            player.body.velocity.y = 100;
+            if (!playerIsPunching()) {
+                player.animations.play('walkDown');
+            }
+            playerDirection = "down";
+        } else if (cursors.left.isDown) {
+            player.body.velocity.x = -100;
+            if (!playerIsPunching()) {
+                player.animations.play('walkLeft');
+            }
+            playerDirection = "left";
+        } else if (cursors.right.isDown) {
+            player.body.velocity.x = 100;
+            if (!playerIsPunching()) {
+                player.animations.play('walkRight');
+            }
+            playerDirection = "right";
+        } else {
+            if (!playerIsPunching()) {
+                player.animations.stop();
+            }
         }
     }
 }
@@ -245,27 +333,34 @@ function playerIsPunching() {
 
 
 
+function playerIsDamaged() {
+    return playerDamagedUpAnim.isPlaying ||
+        playerDamagedDownAnim.isPlaying ||
+        playerDamagedLeftAnim.isPlaying ||
+        playerDamagedRightAnim.isPlaying;
+}
+
+
+
 function checkPlayerPunch() {
-    if (spacebar.isDown) {
-        if (game.time.now > punchTime) {
-            switch (playerDirection) {
-                case "up":
-                    playerPunchUpAnim.play();
-                    break;
-                case "down":
-                    playerPunchDownAnim.play();
-                    break;
-                case "left":
-                    playerPunchLeftAnim.play();
-                    break;
-                case "right":
-                    playerPunchRightAnim.play();
-                    break;
-                default:
-                    break;
-            }
-            punchTime = game.time.now + 1500;
+    if (spacebar.isDown && !playerIsDamaged() && (game.time.now > punchTime)) {
+        switch (playerDirection) {
+            case "up":
+                playerPunchUpAnim.play();
+                break;
+            case "down":
+                playerPunchDownAnim.play();
+                break;
+            case "left":
+                playerPunchLeftAnim.play();
+                break;
+            case "right":
+                playerPunchRightAnim.play();
+                break;
+            default:
+                break;
         }
+        punchTime = game.time.now + 1500;
     }
 }
 
