@@ -1,41 +1,41 @@
 var BGGame = BGGame || {};
 
 //title screen
-    var map,
-        level = 0,
-        player,
-        playerStart,
-        bigfoot,
-        backgroundLayer,
-        impassableLayer,
-        baddies,
-        numBaddies = 3,
-        playerVsBaddieTime = 0,
-        bigfootTween1,
-        bigfootTween2,
-        bigfootTween3,
-        bigfootTween4,
-        bigfootDirection,
-        playerDirection,
-        punchTime = 0,
-        epicBattleTime = 0,
-        bigfootKnockbackTime = 0,
-        playerKnockbackTime = 0,
-        playerPunchUpAnim,
-        playerPunchDownAnim,
-        playerPunchLeftAnim,
-        playerPunchRightAnim,
-        playerDamagedUpAnim,
-        playerDamagedDownAnim,
-        playerDamagedLeftAnim,
-        playerDamagedRightAnim,
-        playerLives = 3,
-        bigfootLives = 5,
-        livesText,
-        gameInterruptionText,
-        gameOver = false,
-        spongebob,
-        transitionObjects;
+var map,
+    level = 0,
+    player,
+    playerStart,
+    bigfoot,
+    backgroundLayer,
+    impassableLayer,
+    baddies,
+    numBaddies = 3,
+    playerVsBaddieTime = 0,
+    bigfootTween1,
+    bigfootTween2,
+    bigfootTween3,
+    bigfootTween4,
+    bigfootDirection,
+    playerDirection,
+    punchTime = 0,
+    epicBattleTime = 0,
+    bigfootKnockbackTime = 0,
+    playerKnockbackTime = 0,
+    playerPunchUpAnim,
+    playerPunchDownAnim,
+    playerPunchLeftAnim,
+    playerPunchRightAnim,
+    playerDamagedUpAnim,
+    playerDamagedDownAnim,
+    playerDamagedLeftAnim,
+    playerDamagedRightAnim,
+    playerLives = 3,
+    bigfootLives = 5,
+    livesText,
+    gameInterruptionText,
+    gameOver = false,
+    spongebob,
+    transitionObjects;
 
 BGGame.Game = function() {};
 
@@ -253,7 +253,7 @@ BGGame.Game.prototype = {
         if (!gameOver) {
             this.game.physics.arcade.overlap(player, bigfoot, this.epicBattle, null, this);
             this.game.physics.arcade.collide(player, impassableLayer);
-//            this.game.physics.arcade.collide(baddie, baddies);
+            this.game.physics.arcade.collide(bigfoot, baddies);
 
             this.checkMovePlayer();
             this.checkPlayerPunch();
@@ -281,7 +281,6 @@ BGGame.Game.prototype = {
                     this.stopBaddie(baddie);
                 }
             }, this);
-
         }
     },
         
@@ -290,7 +289,7 @@ BGGame.Game.prototype = {
             if (this.playerIsPunching()) {
                 baddie.kill();
             } else {
-                player.animations.stop();                
+                this.playPlayerDamaged();
                 this.shootSpriteBack(player, baddie);
                 playerLives--;
                 livesText.text = "Lives: " + playerLives;
@@ -299,6 +298,27 @@ BGGame.Game.prototype = {
 
             playerVsBaddieTime = this.game.time.now + 1000;
         }
+    },
+    
+    
+    playPlayerDamaged: function() {
+        player.animations.stop();
+            switch (playerDirection) {
+                case "up":
+                    player.animations.play('damagedUp');
+                    break;
+                case "down":
+                    player.animations.play('damagedDown');
+                    break;
+                case "left":
+                    player.animations.play('damagedLeft');
+                    break;
+                case "right":
+                    player.animations.play('damagedRight');
+                    break;
+                default:
+                    break;
+            }
     },
 
 
@@ -309,7 +329,7 @@ BGGame.Game.prototype = {
                 bigfootKnockbackTime = this.game.time.now + 200;
                 bigfootLives--;
             } else {
-                player.animations.stop();
+                this.playPlayerDamaged();
                 this.shootSpriteBack(player, bigfoot);
                 playerKnockbackTime = this.game.time.now + 200;
                 playerLives--;
@@ -460,22 +480,14 @@ BGGame.Game.prototype = {
     setBaddieDirection: function(baddie) {
         var currentAngle = (baddie.body.angle * 180) / Math.PI;
 
-        if (this.valueIsBetween(currentAngle, -135, -45)) {               // facing up
-            if (baddie.animations.currentAnim != baddie.animations.getAnimation("walkUp")) {
-                baddie.animations.play("walkUp");
-            }
-        } else if (this.valueIsBetween(currentAngle, 45, 135)) {          // facing down
-            if (baddie.animations.currentAnim != baddie.animations.getAnimation("walkDown")) {
-                baddie.animations.play("walkDown");
-            }
-        } else if (currentAngle >= 135 || currentAngle <= -135) {    // facing left
-            if (baddie.animations.currentAnim != baddie.animations.getAnimation("walkLeft")) {
-                baddie.animations.play("walkLeft");
-            }
-        } else if (this.valueIsBetween(currentAngle, -45, 45)) {          // facing right
-            if (baddie.animations.currentAnim != baddie.animations.getAnimation("walkRight")) {
-                baddie.animations.play("walkRight");
-            }
+        if (this.valueIsBetween(currentAngle, -135, -45)) {
+            baddie.animations.play("walkUp");
+        } else if (this.valueIsBetween(currentAngle, 45, 135)) {
+            baddie.animations.play("walkDown");
+        } else if (currentAngle >= 135 || currentAngle <= -135) {
+            baddie.animations.play("walkLeft");
+        } else if (this.valueIsBetween(currentAngle, -45, 45)) {
+            baddie.animations.play("walkRight");
         }
     },
 
@@ -483,25 +495,17 @@ BGGame.Game.prototype = {
         var currentAngle = (bigfoot.body.angle * 180) / Math.PI;
 
         if (this.valueIsBetween(currentAngle, 90, 180)) {
-            if (bigfoot.animations.currentAnim != bigfoot.animations.getAnimation("walkBottomLeft")) {
-                bigfoot.animations.play("walkBottomLeft");
-                bigfootDirection = "bottomLeft";
-            }
+            bigfoot.animations.play("walkBottomLeft");
+            bigfootDirection = "bottomLeft";
         } else if (this.valueIsBetween(currentAngle, 0, 90)) {
-            if (bigfoot.animations.currentAnim != bigfoot.animations.getAnimation("walkBottomRight")) {
-                bigfoot.animations.play("walkBottomRight");
-                bigfootDirection = "bottomRight";
-            }
+            bigfoot.animations.play("walkBottomRight");
+            bigfootDirection = "bottomRight";
         } else if (this.valueIsBetween(currentAngle, -90, 0)) {
-            if (bigfoot.animations.currentAnim != bigfoot.animations.getAnimation("walkTopRight")) {
-                bigfoot.animations.play("walkTopRight");
-                bigfootDirection = "topRight";
-            }
+            bigfoot.animations.play("walkTopRight");
+            bigfootDirection = "topRight";
         } else if (this.valueIsBetween(currentAngle, -180, -90)) {
-            if (bigfoot.animations.currentAnim != bigfoot.animations.getAnimation("walkTopLeft")) {
-                bigfoot.animations.play("walkTopLeft");
-                bigfootDirection = "topLeft";
-            }
+            bigfoot.animations.play("walkTopLeft");
+            bigfootDirection = "topLeft";
         }         
     },
 
