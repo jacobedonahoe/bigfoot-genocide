@@ -14,6 +14,10 @@ var map,
     punchTime = 0,
     epicBattleTime = 0,
     
+    baddies,
+    numBaddies = 3,
+    playerVsBaddieTime = 0,
+    
     playerPunchUpAnim,
     playerPunchDownAnim,
     playerPunchLeftAnim,
@@ -35,8 +39,9 @@ var map,
 
 function preload() {
     game.load.spritesheet('player', 'assets/sprites/characters/player.png', 28, 28);
-    game.load.spritesheet('players', 'assets/sprites/characters/players.png', 32, 32);
+    game.load.spritesheet('baddie', 'assets/sprites/characters/baddie.png', 28, 28);
     game.load.spritesheet('bigfoot', 'assets/sprites/characters/bigfoot1.png', 85, 120);
+    
     game.load.tilemap('map1', 'assets/maps/map1.json', null, Phaser.Tilemap.TILED_JSON);
     game.load.tilemap('map2', 'assets/maps/map2.json', null, Phaser.Tilemap.TILED_JSON);
     
@@ -89,6 +94,7 @@ function create() {
     spongebob.kill();
     
     setupPlayer();
+    setupBaddies();
     setupBigfoot();
 }
 
@@ -135,8 +141,40 @@ function setupPlayer() {
 
 
 
+function setupBaddies() {
+    baddies = game.add.group();
+    baddies.enableBody = true;
+    baddies.physicBodyType = Phaser.Physics.ARCADE;
+    
+    for (var i = 0; i < numBaddies; i++) {
+        var baddie = baddies.create(getRandomNumber(100, 700), getRandomNumber(100, 700), 'baddie', 1);
+        baddie.body.collideWorldBounds = true;
+        baddie.anchor.setTo(0.5, 0.5); 
+        baddieDirection = "down";
+        
+        baddie.animations.add('walkUp', [39, 40, 41], 8, true);
+        baddie.animations.add('walkDown', [0, 1, 2], 8, true);
+        baddie.animations.add('walkLeft', [13, 14, 15], 8, true);
+        baddie.animations.add('walkRight', [26, 27, 28], 8, true);
+
+        baddie.animations.add('damagedUp', [42, 43, 44], 6);
+        baddie.animations.add('damagedDown', [3, 4, 5], 6);
+        baddie.animations.add('damagedLeft', [16, 17, 18], 6);
+        baddie.animations.add('damagedRight', [29, 30, 31], 6);
+
+        baddie.animations.add('punchUp', [46, 47, 48, 49, 50, 51], 8);
+        baddie.animations.add('punchDown', [7, 8, 9, 10, 11, 12], 8);
+        baddie.animations.add('punchLeft', [20, 21, 22, 23, 24, 25], 8);
+        baddie.animations.add('punchRight', [33, 34, 35, 36, 37, 38], 8);
+        
+        baddie.animations.add('dead', [6, 19, 32, 45], 2);
+    }
+}
+
+
+
 function setupBigfoot() {
-    bigfoot = game.add.sprite(700, 130, 'bigfoot');
+    bigfoot = game.add.sprite(getRandomNumber(500, 700), getRandomNumber(100, 300), 'bigfoot');
     bigfootDirection = "bottomLeft";
     
     game.physics.arcade.enable(bigfoot);
@@ -188,6 +226,18 @@ function update() {
         } else {
             stopBigfoot();
         }
+        
+        baddies.forEach(function(baddie) {
+            game.physics.arcade.overlap(player, baddie, playerVsBaddie, null, this);
+            game.physics.arcade.collide(baddie, impassableLayer);
+            
+            if (game.physics.arcade.distanceBetween(baddie, player) < 200) {
+                game.physics.arcade.moveToObject(baddie, player);
+                setBaddieDirection(baddie);
+            } else {
+                stopBaddie(baddie);
+            }
+        });
     }
 }
 
@@ -248,6 +298,44 @@ function epicBattle(player, bigfoot) {
 
 
 
+function playerVsBaddie(player, baddie) {
+    if (game.time.now > playerVsBaddieTime) {
+        if (playerIsPunching()) {
+            baddie.kill();
+        } else {
+            player.animations.stop();
+            
+            switch (playerDirection) {
+                case "up":
+                    shootSpriteBack(player, player.body.x, (player.body.y + 20));
+                    player.animations.play('damagedUp');
+                    break;
+                case "down":
+                    shootSpriteBack(player, player.body.x, (player.body.y - 20));
+                    player.animations.play('damagedDown');
+                    break;
+                case "left":
+                    shootSpriteBack(player, (player.body.x + 20), player.body.y);
+                    player.animations.play('damagedLeft');
+                    break;
+                case "right":
+                    shootSpriteBack(player, (player.body.x - 20), player.body.y);
+                    player.animations.play('damagedRight');
+                    break;
+                default:
+                    break;
+            }
+            
+            playerLives--;
+            livesText.text = "Lives: " + playerLives;
+        }
+        
+        playerVsBaddieTime = game.time.now + 1000;
+    }
+}
+
+
+
 function shootSpriteBack(sprite, toX, toY) {
     var tween = game.add.tween(sprite).to({x: toX, y: toY},
                                           350,
@@ -262,6 +350,9 @@ function endGame(didWin) {
     
     player.body.velocity.setTo(0, 0);
     bigfoot.body.velocity.setTo(0, 0);
+    baddies.forEach(function(baddie) {
+        stopBaddie(baddie);
+    });
     
     if (didWin) {
         bigfoot.kill();
@@ -278,6 +369,7 @@ function endGame(didWin) {
         player.animations.play('dead', 3, false, true);
 
         gameInterruptionText.visible = true;
+        gameInterruptionText.bringToTop();
         
         game.sound.play('troll');
     }
@@ -366,6 +458,30 @@ function checkPlayerPunch() {
 
 
 
+function setBaddieDirection(baddie) {
+    var currentAngle = (baddie.body.angle * 180) / Math.PI;
+    
+    if (valueIsBetween(currentAngle, -135, -45)) {               // facing up
+        if (baddie.animations.currentAnim != baddie.animations.getAnimation("walkUp")) {
+            baddie.animations.play("walkUp");
+        }
+    } else if (valueIsBetween(currentAngle, 45, 135)) {          // facing down
+        if (baddie.animations.currentAnim != baddie.animations.getAnimation("walkDown")) {
+            baddie.animations.play("walkDown");
+        }
+    } else if (currentAngle >= 135 || currentAngle <= -135) {    // facing left
+        if (baddie.animations.currentAnim != baddie.animations.getAnimation("walkLeft")) {
+            baddie.animations.play("walkLeft");
+        }
+    } else if (valueIsBetween(currentAngle, -45, 45)) {          // facing right
+        if (baddie.animations.currentAnim != baddie.animations.getAnimation("walkRight")) {
+            baddie.animations.play("walkRight");
+        }
+    }
+}
+
+
+
 function setBigfootsDirection() {
     var currentAngle = (bigfoot.body.angle * 180) / Math.PI;
     
@@ -390,6 +506,15 @@ function setBigfootsDirection() {
             bigfootDirection = "topLeft";
         }
     } 
+}
+
+
+
+function stopBaddie(baddie) {
+    baddie.body.velocity.x = 0;
+    baddie.body.velocity.y = 0;
+    baddie.animations.stop();
+    baddie.frame = 1;
 }
 
 
@@ -421,4 +546,10 @@ function stopBigfoot() {
 
 function valueIsBetween(toCompareVal, smallVal, bigVal) {
     return toCompareVal > smallVal && toCompareVal < bigVal;
+}
+
+
+
+function getRandomNumber(min, max) {
+  return Math.random() * (max - min) + min;
 }
