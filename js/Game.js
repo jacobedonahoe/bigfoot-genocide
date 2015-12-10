@@ -253,7 +253,7 @@ BGGame.Game.prototype = {
         if (!gameOver) {
             this.game.physics.arcade.overlap(player, bigfoot, this.epicBattle, null, this);
             this.game.physics.arcade.collide(player, impassableLayer);
-            this.game.physics.arcade.collide(baddie, baddies);
+//            this.game.physics.arcade.collide(baddie, baddies);
 
             this.checkMovePlayer();
             this.checkPlayerPunch();
