@@ -213,6 +213,7 @@ function update() {
     if (!gameOver) {
         game.physics.arcade.overlap(player, bigfoot, epicBattle, null, this);
         game.physics.arcade.collide(player, impassableLayer);
+        game.physics.arcade.collide(bigfoot, baddies);
 
         checkMovePlayer();
         checkPlayerPunch();
@@ -230,6 +231,7 @@ function update() {
         baddies.forEach(function(baddie) {
             game.physics.arcade.overlap(player, baddie, playerVsBaddie, null, this);
             game.physics.arcade.collide(baddie, impassableLayer);
+            game.physics.arcade.collide(baddie, baddies);
             
             if (game.physics.arcade.distanceBetween(baddie, player) < 200) {
                 game.physics.arcade.moveToObject(baddie, player);
